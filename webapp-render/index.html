@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lattice Studio</title>
+  <meta
+    name="description"
+    content="支持 MOL、SDF、XYZ、PDB、MOL2、CIF 的本地分子与晶体可视化工作台。"
+  >
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./vendor/3Dmol-min.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <div class="page-glow page-glow-left"></div>
+    <div class="page-glow page-glow-right"></div>
+
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div class="brand-copy">
+          <p class="eyebrow">Local Molecule & Crystal Renderer</p>
+          <h1>Lattice Studio</h1>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="ghost-button" id="openFileButton" type="button">打开结构文件</button>
+        <button class="ghost-button" id="resetViewButton" type="button">重置视角</button>
+        <button class="ghost-button" id="exportSvgButton" type="button">导出 SVG</button>
+        <button class="solid-button" id="snapshotButton" type="button">导出 PNG</button>
+      </div>
+    </header>
+
+    <section class="hero-strip">
+      <div class="hero-copy">
+        <p class="eyebrow hero-eyebrow">Local Chemistry Workspace</p>
+        <h2>Lattice Studio</h2>
+        <p class="hero-subtitle">本地分子与晶体渲染工作台</p>
+        <p class="hero-text">
+          读取常见化学结构文件，在一块更干净的画布里完成视角、晶胞、材质、补氢、光照与导出。
+        </p>
+      </div>
+
+      <div class="hero-meta">
+        <p class="hero-note">本地读取、实时调参、统一出图，适合分子浏览、晶体展示和论文插图整理。</p>
+        <div class="hero-specs">
+          <span class="hero-spec-label">Formats</span>
+          <p>MOL · SDF · XYZ · PDB · MOL2 · CIF</p>
+          <span class="hero-spec-label">Workflow</span>
+          <p>本地打开，即时调参，统一导出 PNG / SVG</p>
+          <span class="hero-spec-label">Platform</span>
+          <p>Mac / Windows 浏览器直接打开，无需后端</p>
+        </div>
+      </div>
+    </section>
+
+    <main class="workspace">
+      <aside class="panel panel-left">
+        <section class="panel-section">
+          <div class="section-heading">
+            <p class="section-kicker">Import</p>
+            <h3>结构导入</h3>
+          </div>
+
+          <label class="dropzone" for="fileInput" id="dropzone">
+            <input id="fileInput" type="file" accept=".mol,.sdf,.xyz,.pdb,.mol2,.cif" hidden>
+            <span class="dropzone-title">拖拽文件到这里，或点击选择</span>
+            <span class="dropzone-subtitle">推荐使用 `.mol`、`.sdf`、`.xyz`、`.pdb`、`.mol2`、`.cif`</span>
+          </label>
+
+          <div class="button-row">
+            <button class="chip-button" data-sample="benzene" type="button">示例 Benzene</button>
+            <button class="chip-button" data-sample="water" type="button">示例 Water</button>
+            <button class="chip-button" data-sample="nacl" type="button">示例 NaCl CIF</button>
+          </div>
+
+          <label class="control hidden-control" id="cifBlockControl">
+            <span>CIF 结构块</span>
+            <select id="cifBlockSelect"></select>
+          </label>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <p class="section-kicker">Structure</p>
+            <h3>模型表达</h3>
+          </div>
+
+          <label class="control">
+            <span>渲染样式</span>
+            <select id="stylePreset">
+              <option value="ball-stick">Ball & Stick</option>
+              <option value="sticks">Sticks</option>
+              <option value="licorice">Licorice</option>
+              <option value="pymol-premium">PyMOL Premium</option>
+              <option value="editorial-ink">Editorial Ink</option>
+              <option value="spacefill">Spacefill</option>
+              <option value="candy">Candy Gloss</option>
+              <option value="cartoon-pop">Cartoon Pop</option>
+              <option value="toybox">Toybox Deluxe</option>
+              <option value="ghost">Frosted Ghost</option>
+              <option value="crystal-lattice">Crystal Lattice</option>
+              <option value="wire">Wireframe</option>
+              <option value="line">Line</option>
+            </select>
+          </label>
+
+          <p class="fine-print" id="styleHint">
+            平衡科研可读性和视觉层次的经典球棍样式。
+          </p>
+
+          <label class="control">
+            <span>材质气质</span>
+            <select id="materialPreset">
+              <option value="ceramic">Ceramic</option>
+              <option value="satin">Satin</option>
+              <option value="glass">Glass</option>
+              <option value="technical">Technical</option>
+            </select>
+          </label>
+
+          <label class="control range-control">
+            <span>原子尺度</span>
+            <input id="atomScale" type="range" min="0.15" max="1.4" step="0.01" value="0.56">
+            <strong id="atomScaleValue">0.56</strong>
+          </label>
+
+          <label class="control range-control">
+            <span>键半径</span>
+            <input id="bondRadius" type="range" min="0.04" max="0.34" step="0.01" value="0.16">
+            <strong id="bondRadiusValue">0.16</strong>
+          </label>
+
+          <label class="toggle">
+            <input id="showHydrogens" type="checkbox" checked>
+            <span>显示氢原子</span>
+          </label>
+
+          <label class="toggle">
+            <input id="autoAddHydrogens" type="checkbox" checked>
+            <span>自动补氢（CNOS）</span>
+          </label>
+
+          <p class="fine-print">
+            说明：会对 C / N / O / S 等常见元素按基础价态自动补足缺失氢，并对 CIF 晶体结构同样生效。
+          </p>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <p class="section-kicker">Optimize</p>
+            <h3>小分子快速优化</h3>
+          </div>
+
+          <label class="control range-control">
+            <span>优化步数</span>
+            <input id="optimizeSteps" type="range" min="40" max="320" step="20" value="160">
+            <strong id="optimizeStepsValue">160</strong>
+          </label>
+
+          <div class="stacked-actions">
+            <button class="solid-button wide-button" id="optimizeButton" type="button">快速优化构象</button>
+            <button class="ghost-button wide-button" id="restoreGeometryButton" type="button">恢复原始坐标</button>
+          </div>
+
+          <p class="fine-print" id="optimizeHint">
+            适用于小分子。会优先尝试连接本地 RDKit 服务执行 MMFF/UFF；若本地服务不可用，则自动回退到浏览器内优化。
+          </p>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <p class="section-kicker">Crystal</p>
+            <h3>晶胞与扩胞</h3>
+          </div>
+
+          <label class="toggle">
+            <input id="showUnitCell" type="checkbox" checked>
+            <span>绘制晶胞边框与轴向</span>
+          </label>
+
+          <div class="triplet-grid">
+            <label class="control compact-control">
+              <span>A</span>
+              <input id="supercellA" type="number" min="1" max="4" step="1" value="1">
+            </label>
+            <label class="control compact-control">
+              <span>B</span>
+              <input id="supercellB" type="number" min="1" max="4" step="1" value="1">
+            </label>
+            <label class="control compact-control">
+              <span>C</span>
+              <input id="supercellC" type="number" min="1" max="4" step="1" value="1">
+            </label>
+          </div>
+
+          <p class="fine-print">当载入 CIF 等周期结构时，可直接复制单胞生成超胞。</p>
+        </section>
+      </aside>
+
+      <section class="viewer-stage">
+        <div class="viewer-header">
+          <div>
+            <p class="section-kicker">Workspace</p>
+            <h3 id="currentTitle">Benzene.mol</h3>
+          </div>
+
+          <div class="viewer-pills">
+            <span class="viewer-pill" id="formatBadge">SDF/MOL</span>
+            <span class="viewer-pill" id="structureBadge">Molecule</span>
+            <span class="viewer-pill" id="atomCountBadge">6 atoms</span>
+          </div>
+        </div>
+
+        <div class="viewer-frame">
+          <div id="viewer"></div>
+          <canvas id="illustrationCanvas" aria-label="Unified molecular illustration renderer"></canvas>
+          <div class="viewer-overlay">
+            <div class="overlay-block">
+              <span class="overlay-label">手势</span>
+              <span class="overlay-value">拖动旋转 / 滚轮缩放 / 右键平移</span>
+            </div>
+            <div class="overlay-block">
+              <span class="overlay-label">状态</span>
+              <span class="overlay-value" id="statusText">已载入内置 Benzene 示例</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel panel-right">
+        <section class="panel-section">
+          <div class="section-heading">
+            <p class="section-kicker">Light</p>
+            <h3>光照与画布</h3>
+          </div>
+
+          <label class="control">
+            <span>光照模式</span>
+            <select id="lightingPreset">
+              <option value="studio">Studio Soft</option>
+              <option value="northern">Northern Sky</option>
+              <option value="museum">Museum Black</option>
+              <option value="sunset">Sunset Rim</option>
+              <option value="blueprint">Blueprint Crisp</option>
+            </select>
+          </label>
+
+          <p class="fine-print" id="lightHint">
+            冷白棚拍风格，适合大多数分子与晶体模型。
+          </p>
+
+          <p class="fine-print">
+            当前屏幕预览、PNG 与 SVG 共用同一套投影与阴影算法，拖动视角后的出图会保持一致。
+          </p>
+
+          <label class="control range-control">
+            <span>阴影强度</span>
+            <input id="aoStrength" type="range" min="0.3" max="2.2" step="0.1" value="1.2">
+            <strong id="aoStrengthValue">1.2</strong>
+          </label>
+
+          <label class="control range-control">
+            <span>阴影半径</span>
+            <input id="aoRadius" type="range" min="2" max="12" step="0.5" value="6.5">
+            <strong id="aoRadiusValue">6.5</strong>
+          </label>
+
+          <label class="control">
+            <span>背景色</span>
+            <input id="backgroundColor" type="color" value="#f4f7fb">
+          </label>
+
+          <label class="control">
+            <span>投影视图</span>
+            <select id="projection">
+              <option value="perspective">透视</option>
+              <option value="orthographic">正交（无透视）</option>
+            </select>
+          </label>
+
+          <p class="fine-print">
+            透视更接近真实相机，近大远小；正交（无透视）更适合论文插图和结构对比。
+          </p>
+
+          <label class="toggle">
+            <input id="spinEnabled" type="checkbox">
+            <span>自动旋转</span>
+          </label>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <p class="section-kicker">Palette</p>
+            <h3>元素颜色</h3>
+          </div>
+
+          <div id="elementPalette" class="element-palette"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <p class="section-kicker">Info</p>
+            <h3>结构摘要</h3>
+          </div>
+
+          <dl class="info-list">
+            <div>
+              <dt>文件名</dt>
+              <dd id="fileNameInfo">Benzene.mol</dd>
+            </div>
+            <div>
+              <dt>文件类型</dt>
+              <dd id="fileTypeInfo">SDF / MOL</dd>
+            </div>
+            <div>
+              <dt>元素组成</dt>
+              <dd id="elementsInfo">C</dd>
+            </div>
+            <div>
+              <dt>扩胞设置</dt>
+              <dd id="supercellInfo">1 × 1 × 1</dd>
+            </div>
+            <div>
+              <dt>构象状态</dt>
+              <dd id="conformerInfo">原始导入坐标</dd>
+            </div>
+            <div>
+              <dt>氢原子</dt>
+              <dd id="hydrogenInfo">源文件显示</dd>
+            </div>
+          </dl>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
